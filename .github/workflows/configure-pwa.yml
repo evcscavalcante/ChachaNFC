@@ -1,0 +1,130 @@
+name: Configurar PWA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/configure-pwa.yml
+
+permissions:
+  contents: write
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Atualizar index.html
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          html = path.read_text(encoding='utf-8')
+
+          if 'manifest.webmanifest' not in html:
+              old = '  <meta name="theme-color" content="#0f172a" />\n'
+              new = '''  <meta name="theme-color" content="#0f172a" />
+            <meta name="application-name" content="Controle de Bafômetro" />
+            <meta name="apple-mobile-web-app-capable" content="yes" />
+            <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+            <meta name="apple-mobile-web-app-title" content="Bafômetro NFC" />
+            <link rel="manifest" href="./manifest.webmanifest" />
+            <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+            <link rel="apple-touch-icon" href="./icon.svg" />
+          '''
+              html = html.replace(old, new, 1)
+
+          if '.header-line {' not in html:
+              marker = '''    header p {
+                margin: 5px 0 0;
+                color: var(--muted);
+                font-size: .84rem;
+              }'''
+              replacement = marker + '''
+              .header-line {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              }
+              .install-app {
+                flex: 0 0 auto;
+                border: 1px solid #385274;
+                border-radius: 11px;
+                padding: 9px 12px;
+                background: #1a2e4b;
+                color: #edf4ff;
+                font-size: .78rem;
+                font-weight: 800;
+              }
+              .install-app[hidden] { display: none; }'''
+              html = html.replace(marker, replacement, 1)
+
+          old_header = '''  <header>
+              <h1>Controle de Bafômetro</h1>
+              <p>Protótipo local • cadastro, identificação e exportação</p>
+            </header>'''
+          if 'id="btnInstallApp"' not in html:
+              new_header = '''  <header>
+              <div class="header-line">
+                <div>
+                  <h1>Controle de Bafômetro</h1>
+                  <p>Protótipo local • cadastro, identificação e exportação</p>
+                </div>
+                <button class="install-app" id="btnInstallApp" type="button" hidden>Instalar app</button>
+              </div>
+            </header>'''
+              html = html.replace(old_header, new_header, 1)
+
+          if 'serviceWorker.register("./sw.js")' not in html:
+              marker = '''  renderEmployees();
+            renderRecords();
+          })();'''
+              pwa_js = '''  const installButton = $("btnInstallApp");
+            let deferredInstallPrompt = null;
+
+            window.addEventListener("beforeinstallprompt", (event) => {
+              event.preventDefault();
+              deferredInstallPrompt = event;
+              installButton.hidden = false;
+            });
+
+            installButton.addEventListener("click", async () => {
+              if (!deferredInstallPrompt) return;
+              installButton.hidden = true;
+              deferredInstallPrompt.prompt();
+              await deferredInstallPrompt.userChoice;
+              deferredInstallPrompt = null;
+            });
+
+            window.addEventListener("appinstalled", () => {
+              deferredInstallPrompt = null;
+              installButton.hidden = true;
+            });
+
+            if ("serviceWorker" in navigator) {
+              window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./sw.js").catch((error) => {
+                  console.error("Falha ao registrar o service worker:", error);
+                });
+              });
+            }
+
+            renderEmployees();
+            renderRecords();
+          })();'''
+              html = html.replace(marker, pwa_js, 1)
+
+          path.write_text(html, encoding='utf-8')
+          PY
+
+      - name: Salvar alteração
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Ativa instalação PWA no site"
+          git push
