@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Controle de Bafômetro NFC</title>
+  <desc id="desc">Ícone azul-escuro com ondas NFC e marca de confirmação.</desc>
+  <rect width="512" height="512" rx="112" fill="#07101f"/>
+  <rect x="34" y="34" width="444" height="444" rx="92" fill="#0f1b2d" stroke="#58a6ff" stroke-width="16"/>
+  <path d="M154 178c52 0 94 42 94 94" fill="none" stroke="#87bfff" stroke-width="28" stroke-linecap="round"/>
+  <path d="M154 118c85 0 154 69 154 154" fill="none" stroke="#58a6ff" stroke-width="28" stroke-linecap="round"/>
+  <path d="M154 238c19 0 34 15 34 34" fill="none" stroke="#b9d8ff" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="154" cy="272" r="18" fill="#edf4ff"/>
+  <path d="M254 330l48 48 92-112" fill="none" stroke="#31c48d" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
