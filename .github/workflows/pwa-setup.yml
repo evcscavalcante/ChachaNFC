@@ -1,0 +1,63 @@
+name: Configuração final do PWA
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Vincular manifest e service worker
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("index.html")
+          html = p.read_text(encoding="utf-8")
+
+          theme = '  <meta name="theme-color" content="#0f172a" />'
+          pwa_head = '''  <meta name="theme-color" content="#0f172a" />
+            <meta name="application-name" content="Controle de Bafômetro" />
+            <meta name="apple-mobile-web-app-capable" content="yes" />
+            <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+            <meta name="apple-mobile-web-app-title" content="Bafômetro NFC" />
+            <link rel="manifest" href="./manifest.webmanifest" />
+            <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+            <link rel="apple-touch-icon" href="./icon.svg" />'''
+
+          if 'rel="manifest"' not in html:
+              html = html.replace(theme, pwa_head, 1)
+
+          registration = '''
+          <script>
+            if ("serviceWorker" in navigator) {
+              window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./sw.js").catch((error) => {
+                  console.error("Falha ao registrar o service worker:", error);
+                });
+              });
+            }
+          </script>
+          '''
+
+          if 'serviceWorker.register("./sw.js")' not in html:
+              html = html.replace("</body>", registration + "\n</body>", 1)
+
+          p.write_text(html, encoding="utf-8")
+          PY
+
+      - name: Publicar alteração
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Ativa PWA no Controle de Bafômetro"
+          git push
