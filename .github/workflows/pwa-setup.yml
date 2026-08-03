@@ -1,9 +1,11 @@
-name: Configuração final do PWA
+name: Configuração final do PWA e mobile
 
 on:
   push:
     branches:
       - main
+    paths:
+      - .github/workflows/pwa-setup.yml
 
 permissions:
   contents: write
@@ -15,7 +17,7 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
-      - name: Vincular manifest e service worker
+      - name: Atualizar PWA e layout mobile
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -51,6 +53,127 @@ jobs:
           if 'serviceWorker.register("./sw.js")' not in html:
               html = html.replace("</body>", registration + "\n</body>", 1)
 
+          mobile_css = '''
+            /* MOBILE_FUNCIONARIOS_V1 */
+            @media (max-width: 640px) {
+              body { overflow-x: hidden; }
+              main { padding: 12px; }
+              #view-funcionarios,
+              #view-funcionarios .grid,
+              #view-funcionarios .card,
+              #view-funcionarios form,
+              #view-funcionarios .table-wrap {
+                min-width: 0;
+                max-width: 100%;
+              }
+              #view-funcionarios .grid.two {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 12px;
+              }
+              #view-funcionarios .card {
+                padding: 14px;
+                border-radius: 15px;
+              }
+              #view-funcionarios .row {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 0;
+                width: 100%;
+              }
+              #view-funcionarios .row > * {
+                width: 100%;
+                min-width: 0;
+              }
+              #view-funcionarios .field {
+                min-width: 0;
+              }
+              #view-funcionarios input,
+              #view-funcionarios select,
+              #view-funcionarios .btn {
+                max-width: 100%;
+              }
+              #view-funcionarios .toolbar {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 9px;
+              }
+              #view-funcionarios .toolbar > * {
+                width: 100%;
+                min-width: 0;
+              }
+              #view-funcionarios .table-wrap {
+                overflow: visible;
+                border: 0;
+                background: transparent;
+              }
+              #view-funcionarios table,
+              #view-funcionarios tbody {
+                display: block;
+                width: 100%;
+                min-width: 0;
+              }
+              #view-funcionarios thead {
+                display: none;
+              }
+              #view-funcionarios tbody {
+                display: grid;
+                gap: 10px;
+              }
+              #view-funcionarios tr {
+                display: block;
+                width: 100%;
+                min-width: 0;
+                padding: 12px;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                background: #091426;
+              }
+              #view-funcionarios td {
+                display: grid;
+                grid-template-columns: minmax(88px, 34%) minmax(0, 1fr);
+                gap: 10px;
+                width: 100%;
+                min-width: 0;
+                padding: 8px 0;
+                border-bottom: 1px solid rgba(255,255,255,.065);
+                overflow-wrap: anywhere;
+              }
+              #view-funcionarios td::before {
+                color: var(--muted);
+                font-size: .7rem;
+                font-weight: 800;
+                letter-spacing: .04em;
+                text-transform: uppercase;
+              }
+              #view-funcionarios td:nth-child(1)::before { content: "Funcionário"; }
+              #view-funcionarios td:nth-child(2)::before { content: "Matrícula"; }
+              #view-funcionarios td:nth-child(3)::before { content: "Empresa"; }
+              #view-funcionarios td:nth-child(4)::before { content: "Crachá"; }
+              #view-funcionarios td:last-child {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                gap: 8px;
+                padding-top: 11px;
+                padding-bottom: 0;
+                border-bottom: 0;
+              }
+              #view-funcionarios td:last-child::before {
+                display: none;
+              }
+              #view-funcionarios .danger-link {
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 8px 10px;
+                background: #132139;
+              }
+            }
+          '''
+
+          if 'MOBILE_FUNCIONARIOS_V1' not in html:
+              html = html.replace('    @media print {', mobile_css + '\n    @media print {', 1)
+
           p.write_text(html, encoding="utf-8")
           PY
 
@@ -59,5 +182,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || git commit -m "Ativa PWA no Controle de Bafômetro"
+          git diff --cached --quiet || git commit -m "Corrige aba Funcionários no celular"
           git push
