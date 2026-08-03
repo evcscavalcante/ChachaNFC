@@ -1,0 +1,20 @@
+{
+  "name": "Controle de Bafômetro NFC",
+  "short_name": "Bafômetro NFC",
+  "description": "Cadastro, identificação por crachá NFC e registro de testes de bafômetro.",
+  "lang": "pt-BR",
+  "start_url": "/ChachaNFC/",
+  "scope": "/ChachaNFC/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07101f",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
