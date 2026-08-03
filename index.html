@@ -1,389 +1,44 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f172a" />
-  <title>Controle de Bafômetro — Protótipo NFC</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="application-name" content="Controle de Bafômetro">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bafômetro NFC">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <title>Controle de Bafômetro NFC</title>
   <style>
-    :root {
-      --bg: #07101f;
-      --surface: #0f1b2d;
-      --surface-2: #16243a;
-      --line: #2b3d59;
-      --text: #edf4ff;
-      --muted: #9eb0ca;
-      --accent: #58a6ff;
-      --accent-2: #2f81f7;
-      --good: #31c48d;
-      --warn: #f6ad55;
-      --bad: #f87171;
-      --shadow: 0 12px 35px rgba(0,0,0,.28);
-      --radius: 18px;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #102341 0, var(--bg) 48%);
-      color: var(--text);
-    }
-    button, input, select { font: inherit; }
-    button { cursor: pointer; }
-    .app {
-      width: min(1080px, 100%);
-      margin: 0 auto;
-      min-height: 100vh;
-      padding-bottom: 88px;
-    }
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: rgba(7,16,31,.92);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(255,255,255,.07);
-      padding: 16px 18px 13px;
-    }
-    header h1 {
-      font-size: 1.18rem;
-      margin: 0;
-      letter-spacing: .2px;
-    }
-    header p {
-      margin: 5px 0 0;
-      color: var(--muted);
-      font-size: .84rem;
-    }
-    main { padding: 18px; }
-    .view { display: none; }
-    .view.active { display: block; }
-    .grid {
-      display: grid;
-      gap: 16px;
-    }
-    @media (min-width: 820px) {
-      .grid.two { grid-template-columns: 1fr 1fr; }
-    }
-    .card {
-      background: linear-gradient(160deg, rgba(22,36,58,.96), rgba(13,26,45,.96));
-      border: 1px solid rgba(255,255,255,.09);
-      border-radius: var(--radius);
-      padding: 18px;
-      box-shadow: var(--shadow);
-    }
-    .card h2, .card h3 { margin: 0 0 12px; }
-    .card h2 { font-size: 1.1rem; }
-    .card h3 { font-size: 1rem; }
-    .muted { color: var(--muted); }
-    .small { font-size: .83rem; }
-    .field { margin-bottom: 13px; }
-    label {
-      display: block;
-      margin-bottom: 6px;
-      color: #c7d7ed;
-      font-size: .86rem;
-      font-weight: 650;
-    }
-    input, select {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: #091426;
-      color: var(--text);
-      border-radius: 12px;
-      padding: 12px 13px;
-      outline: none;
-      transition: .2s;
-    }
-    input:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(88,166,255,.15);
-    }
-    .row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .row > * { flex: 1; }
-    .btn {
-      border: 0;
-      border-radius: 12px;
-      min-height: 44px;
-      padding: 11px 15px;
-      color: white;
-      font-weight: 750;
-      background: var(--accent-2);
-      box-shadow: 0 8px 20px rgba(47,129,247,.23);
-    }
-    .btn:hover { filter: brightness(1.07); }
-    .btn.secondary {
-      background: #243751;
-      box-shadow: none;
-      border: 1px solid #385274;
-    }
-    .btn.good { background: #168f68; }
-    .btn.warn { background: #b86b16; }
-    .btn.bad { background: #a83f4a; }
-    .btn.ghost {
-      background: transparent;
-      border: 1px solid var(--line);
-      box-shadow: none;
-      color: #dbeafe;
-    }
-    .btn.block { width: 100%; }
-    .btn.icon { flex: 0 0 auto; padding-inline: 13px; }
-    .nfc-box {
-      text-align: center;
-      border: 1px dashed #45658d;
-      background: rgba(88,166,255,.06);
-      border-radius: 17px;
-      padding: 22px 15px;
-      margin-bottom: 14px;
-    }
-    .nfc-symbol {
-      width: 76px;
-      height: 76px;
-      margin: 0 auto 12px;
-      border: 3px solid #87bfff;
-      border-radius: 18px;
-      display: grid;
-      place-items: center;
-      font-weight: 900;
-      font-size: 1.05rem;
-      color: #b9d8ff;
-    }
-    .status {
-      border-radius: 12px;
-      padding: 11px 13px;
-      margin-top: 12px;
-      border: 1px solid var(--line);
-      background: #0a1628;
-      color: var(--muted);
-      min-height: 44px;
-    }
-    .status.good { color: #9cf1cf; border-color: rgba(49,196,141,.45); }
-    .status.warn { color: #ffd49c; border-color: rgba(246,173,85,.45); }
-    .status.bad { color: #ffb2b2; border-color: rgba(248,113,113,.45); }
-    .person-card {
-      display: none;
-      margin-top: 14px;
-      padding: 14px;
-      background: rgba(49,196,141,.08);
-      border: 1px solid rgba(49,196,141,.35);
-      border-radius: 14px;
-    }
-    .person-card.show { display: block; }
-    .person-name { font-size: 1.2rem; font-weight: 850; }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 5px 9px;
-      font-size: .76rem;
-      color: #ccdcf3;
-      background: rgba(255,255,255,.035);
-      margin: 4px 4px 0 0;
-    }
-    .toolbar {
-      display: flex;
-      gap: 9px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-    .toolbar > * { flex: 1 1 145px; }
-    .table-wrap {
-      overflow: auto;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #091426;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 680px;
-    }
-    th, td {
-      text-align: left;
-      padding: 11px 12px;
-      border-bottom: 1px solid rgba(255,255,255,.065);
-      font-size: .84rem;
-      vertical-align: top;
-    }
-    th {
-      position: sticky;
-      top: 0;
-      background: #132139;
-      color: #cfe0f8;
-      white-space: nowrap;
-    }
-    td { color: #dae5f5; }
-    tr:last-child td { border-bottom: 0; }
-    .empty {
-      text-align: center;
-      padding: 28px 15px;
-      color: var(--muted);
-    }
-    .danger-link {
-      border: 0;
-      background: transparent;
-      color: #ff9b9b;
-      font-weight: 750;
-      padding: 4px 6px;
-    }
-    nav {
-      position: fixed;
-      z-index: 20;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(1080px, 100%);
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 5px;
-      padding: 9px 10px calc(9px + env(safe-area-inset-bottom));
-      background: rgba(7,16,31,.96);
-      border-top: 1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(16px);
-    }
-    .tab {
-      border: 0;
-      background: transparent;
-      color: #8fa4c1;
-      padding: 9px 5px;
-      border-radius: 12px;
-      font-size: .78rem;
-      font-weight: 750;
-    }
-    .tab.active {
-      color: white;
-      background: #1a2e4b;
-    }
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 9px;
-      margin-bottom: 15px;
-    }
-    .kpi {
-      background: #0a1628;
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      padding: 11px;
-      text-align: center;
-    }
-    .kpi b { display: block; font-size: 1.25rem; }
-    .kpi span { color: var(--muted); font-size: .73rem; }
-    dialog {
-      width: min(520px, calc(100% - 24px));
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      color: var(--text);
-      background: #101d30;
-      box-shadow: 0 25px 70px rgba(0,0,0,.55);
-      padding: 0;
-    }
-    dialog::backdrop { background: rgba(0,0,0,.7); }
-    .dialog-body { padding: 19px; }
-    .dialog-actions {
-      display: flex;
-      gap: 10px;
-      border-top: 1px solid var(--line);
-      padding: 13px 19px;
-    }
-    .dialog-actions button { flex: 1; }
-    .notice {
-      padding: 12px 13px;
-      border-radius: 12px;
-      background: rgba(246,173,85,.09);
-      border: 1px solid rgba(246,173,85,.35);
-      color: #ffd9a9;
-      margin-bottom: 14px;
-      font-size: .84rem;
-    }
-    @media print {
-      body { background: white; color: black; }
-      header, nav, .no-print, #view-teste, #view-funcionarios { display: none !important; }
-      #view-registros { display: block !important; }
-      .card { box-shadow: none; border: 0; background: white; color: black; }
-      .table-wrap { overflow: visible; border: 0; }
-      table { min-width: 0; color: black; }
-      th, td { color: black; border-color: #bbb; }
-      th { background: #eee; }
-    }
+    :root{--bg:#07101f;--card:#102039;--card2:#091426;--line:#304764;--text:#edf4ff;--muted:#9fb1ca;--blue:#2f81f7;--green:#168f68;--red:#ff8c96;--shadow:0 12px 32px #0006}
+    *{box-sizing:border-box}html,body{margin:0;width:100%;max-width:100%;overflow-x:hidden}body{min-height:100vh;background:radial-gradient(circle at top,#102341,var(--bg) 48%);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}.app{width:min(1080px,100%);min-height:100vh;margin:auto;padding-bottom:88px}header{position:sticky;top:0;z-index:10;padding:16px 18px 13px;background:#07101fee;border-bottom:1px solid #ffffff12;backdrop-filter:blur(14px)}h1{margin:0;font-size:1.18rem}header p{margin:5px 0 0;color:var(--muted);font-size:.84rem}main{padding:16px}.view{display:none}.view.active{display:block}.grid{display:grid;gap:15px}.card{min-width:0;padding:17px;border:1px solid #ffffff16;border-radius:18px;background:linear-gradient(155deg,#162943f5,#0d1a2df5);box-shadow:var(--shadow);overflow:hidden}.card h2{margin:0 0 13px;font-size:1.08rem}.field{min-width:0;margin-bottom:13px}label{display:block;margin-bottom:6px;color:#cfddf0;font-size:.86rem;font-weight:700}input,select,button{font:inherit}input,select{display:block;width:100%;min-width:0;padding:12px 13px;border:1px solid var(--line);border-radius:12px;outline:none;background:var(--card2);color:var(--text)}input:focus,select:focus{border-color:#58a6ff;box-shadow:0 0 0 3px #58a6ff22}.row,.toolbar,.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1;min-width:0}.btn{min-height:44px;padding:11px 15px;border:0;border-radius:12px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}.btn.secondary{background:#263b58;border:1px solid #405d80}.btn.ghost{background:transparent;border:1px solid var(--line)}.btn.good{background:var(--green)}.btn.block{width:100%}.btn.icon{flex:0 0 auto}.status{min-height:44px;margin-top:11px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--card2);color:var(--muted);overflow-wrap:anywhere}.status.good{color:#9cf1cf;border-color:#31c48d70}.status.warn{color:#ffd49c;border-color:#f6ad5570}.status.bad{color:#ffb2b2;border-color:#f8717170}.nfc{padding:20px 14px;text-align:center;border:1px dashed #4c6f9a;border-radius:17px;background:#58a6ff0d}.nfc-icon{display:grid;place-items:center;width:72px;height:72px;margin:0 auto 12px;border:3px solid #87bfff;border-radius:18px;color:#c6e0ff;font-weight:900}.nfc p{color:var(--muted);font-size:.84rem}.person{display:none;margin-top:13px;padding:14px;border:1px solid #31c48d60;border-radius:14px;background:#31c48d12}.person.show{display:block}.person strong{display:block;margin-bottom:7px;font-size:1.16rem}.pill{display:inline-flex;margin:3px 3px 0 0;padding:5px 9px;border:1px solid var(--line);border-radius:999px;color:#cfe0f7;font-size:.75rem}.toolbar{margin-bottom:13px}.toolbar>*{flex:1 1 150px;min-width:0}.table-wrap{width:100%;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--card2)}table{width:100%;min-width:680px;border-collapse:collapse}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid #ffffff10;font-size:.84rem;vertical-align:top}th{background:#132139;color:#d5e3f6;white-space:nowrap}tr:last-child td{border-bottom:0}.muted{color:var(--muted)}.small{font-size:.79rem}.link-btn{padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:#132139;color:#f2f6ff;font-weight:750;cursor:pointer}.link-btn.delete{color:#ffabb2}.empty{padding:28px 14px;text-align:center;color:var(--muted)}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.kpi{padding:10px 5px;text-align:center;border:1px solid var(--line);border-radius:12px;background:var(--card2)}.kpi b{display:block;font-size:1.25rem}.kpi span{font-size:.7rem;color:var(--muted)}nav{position:fixed;left:50%;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:min(1080px,100%);padding:9px 10px calc(9px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#07101ff5;border-top:1px solid #ffffff14;backdrop-filter:blur(15px)}.tab{padding:10px 4px;border:0;border-radius:11px;background:transparent;color:#91a5c1;font-size:.78rem;font-weight:800}.tab.active{background:#1a2e4b;color:#fff}dialog{width:min(480px,calc(100% - 24px));padding:0;border:1px solid var(--line);border-radius:17px;background:#101d30;color:var(--text)}dialog::backdrop{background:#000b}.dialog-body{padding:18px}.dialog-actions{display:flex;gap:10px;padding:13px 18px;border-top:1px solid var(--line)}.dialog-actions>*{flex:1}
+    @media(min-width:820px){.grid.two{grid-template-columns:1fr 1fr}}
+    @media(max-width:700px){main{padding:12px}.card{padding:14px;border-radius:15px}.grid{gap:12px}.row,.toolbar,.actions{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}.row>*,.toolbar>*,.actions>*{width:100%;max-width:100%}.btn.icon{width:100%}#view-funcionarios .table-wrap{overflow:visible;border:0;background:transparent}#view-funcionarios table,#view-funcionarios tbody{display:block;width:100%;min-width:0}#view-funcionarios thead{display:none}#view-funcionarios tbody{display:grid;gap:10px}#view-funcionarios tr{display:block;width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card2)}#view-funcionarios td{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;width:100%;padding:8px 0;border-bottom:1px solid #ffffff10;overflow-wrap:anywhere;word-break:break-word}#view-funcionarios td::before{color:var(--muted);font-size:.68rem;font-weight:850;text-transform:uppercase}#view-funcionarios td:nth-child(1)::before{content:"Funcionário"}#view-funcionarios td:nth-child(2)::before{content:"Matrícula"}#view-funcionarios td:nth-child(3)::before{content:"Empresa"}#view-funcionarios td:nth-child(4)::before{content:"Crachá"}#view-funcionarios td:last-child{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-top:11px;padding-bottom:0;border-bottom:0}#view-funcionarios td:last-child::before{display:none}#view-funcionarios .link-btn{width:100%}}
+    @media print{body{background:#fff;color:#000}header,nav,.no-print,#view-teste,#view-funcionarios{display:none!important}#view-registros{display:block!important}.card{box-shadow:none;border:0;background:#fff}.table-wrap{overflow:visible;border:0}table{min-width:0}th,td{color:#000;border-color:#bbb}th{background:#eee}}
   </style>
 </head>
 <body>
 <div class="app">
-  <header>
-    <h1>Controle de Bafômetro</h1>
-    <p>Protótipo local • cadastro, identificação e exportação</p>
-  </header>
-
+  <header><h1>Controle de Bafômetro</h1><p>Cadastro, identificação NFC e exportação</p></header>
   <main>
     <section id="view-teste" class="view active">
       <div class="grid two">
         <article class="card">
           <h2>Identificar funcionário</h2>
-          <div class="nfc-box">
-            <div class="nfc-symbol">NFC</div>
-            <strong>Aproxime o crachá</strong>
-            <p class="muted small">O navegador tentará ler o número de série disponibilizado pelo Web NFC.</p>
-            <button class="btn block" id="btnScanTest">Iniciar leitura NFC</button>
-            <div class="status" id="scanStatusTest">Leitura ainda não iniciada.</div>
-          </div>
-
-          <div class="field">
-            <label for="testCardId">Ou informe o ID do crachá</label>
-            <div class="row">
-              <input id="testCardId" placeholder="Ex.: E6:59:90:21" autocomplete="off" />
-              <button class="btn secondary icon" id="btnFindEmployee">Buscar</button>
-            </div>
-          </div>
-
-          <div class="person-card" id="identifiedPerson">
-            <div class="person-name" id="identifiedName"></div>
-            <div id="identifiedInfo"></div>
-          </div>
+          <div class="nfc"><div class="nfc-icon">NFC</div><strong>Aproxime o crachá</strong><p>Toque no botão e aproxime o crachá da parte traseira do celular.</p><button class="btn block" id="scanTest">Iniciar leitura NFC</button><div class="status" id="scanTestStatus">Leitura ainda não iniciada.</div></div>
+          <div class="field" style="margin-top:13px"><label for="cardSearch">Ou informe o ID do crachá</label><div class="row"><input id="cardSearch" placeholder="Ex.: E6:59:90:21" autocomplete="off"><button class="btn secondary icon" id="findEmployee">Buscar</button></div></div>
+          <div class="person" id="person"><strong id="personName"></strong><div id="personInfo"></div></div>
         </article>
-
         <article class="card">
           <h2>Registrar teste</h2>
-          <div class="field">
-            <label for="operatorName">Responsável pelo teste</label>
-            <input id="operatorName" placeholder="Nome do operador" />
-          </div>
-          <div class="row">
-            <div class="field">
-              <label for="testResult">Resultado</label>
-              <input id="testResult" inputmode="decimal" value="0,00" placeholder="0,00" />
-            </div>
-            <div class="field">
-              <label for="testUnit">Unidade</label>
-              <select id="testUnit">
-                <option value="mg/L">mg/L</option>
-                <option value="g/L">g/L</option>
-                <option value="Informativo">Informativo</option>
-              </select>
-            </div>
-          </div>
-          <div class="field">
-            <label for="testOutcome">Situação</label>
-            <select id="testOutcome">
-              <option value="Liberado">Liberado</option>
-              <option value="Encaminhar">Encaminhar</option>
-              <option value="Recusou">Recusou</option>
-              <option value="Não realizado">Não realizado</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="testNotes">Observação</label>
-            <input id="testNotes" placeholder="Opcional" />
-          </div>
-          <button class="btn good block" id="btnSaveTest">Registrar e chamar próximo</button>
-          <div class="status" id="saveStatus">Nenhum funcionário identificado.</div>
+          <div class="field"><label for="operator">Responsável pelo teste</label><input id="operator" placeholder="Nome do operador"></div>
+          <div class="row"><div class="field"><label for="result">Resultado</label><input id="result" inputmode="decimal" value="0,00"></div><div class="field"><label for="unit">Unidade</label><select id="unit"><option>mg/L</option><option>g/L</option><option>Informativo</option></select></div></div>
+          <div class="field"><label for="outcome">Situação</label><select id="outcome"><option>Liberado</option><option>Encaminhar</option><option>Recusou</option><option>Não realizado</option></select></div>
+          <div class="field"><label for="notes">Observação</label><input id="notes" placeholder="Opcional"></div>
+          <button class="btn good block" id="saveTest">Registrar e chamar próximo</button><div class="status" id="saveStatus">Nenhum funcionário identificado.</div>
         </article>
       </div>
     </section>
@@ -393,46 +48,18 @@
         <article class="card">
           <h2>Cadastrar funcionário</h2>
           <form id="employeeForm">
-            <input type="hidden" id="employeeInternalId" />
-            <div class="field">
-              <label for="employeeName">Nome completo</label>
-              <input id="employeeName" required placeholder="Nome do funcionário" />
-            </div>
-            <div class="row">
-              <div class="field">
-                <label for="employeeNumber">Matrícula</label>
-                <input id="employeeNumber" required placeholder="Ex.: 1548" />
-              </div>
-              <div class="field">
-                <label for="employeeCompany">Empresa</label>
-                <input id="employeeCompany" placeholder="Empresa ou contrato" />
-              </div>
-            </div>
-            <div class="field">
-              <label for="employeeRole">Função</label>
-              <input id="employeeRole" placeholder="Ex.: Operador" />
-            </div>
-            <div class="field">
-              <label for="employeeCardId">ID do crachá</label>
-              <div class="row">
-                <input id="employeeCardId" required placeholder="E6:59:90:21" autocomplete="off" />
-                <button type="button" class="btn secondary icon" id="btnScanRegister">Ler NFC</button>
-              </div>
-            </div>
-            <div class="status" id="scanStatusRegister">Você pode digitar o ID mostrado pelo aplicativo NFC Check.</div>
-            <div class="row" style="margin-top:13px">
-              <button class="btn" type="submit">Salvar cadastro</button>
-              <button class="btn ghost" type="button" id="btnClearEmployee">Limpar</button>
-            </div>
+            <input type="hidden" id="employeeId">
+            <div class="field"><label for="employeeName">Nome completo</label><input id="employeeName" required placeholder="Nome do funcionário"></div>
+            <div class="row"><div class="field"><label for="employeeNumber">Matrícula</label><input id="employeeNumber" required placeholder="Ex.: 1548"></div><div class="field"><label for="employeeCompany">Empresa</label><input id="employeeCompany" placeholder="Empresa ou contrato"></div></div>
+            <div class="field"><label for="employeeRole">Função</label><input id="employeeRole" placeholder="Ex.: Operador"></div>
+            <div class="field"><label for="employeeCard">ID do crachá</label><div class="row"><input id="employeeCard" required placeholder="E6:59:90:21" autocomplete="off"><button type="button" class="btn secondary icon" id="scanRegister">Ler NFC</button></div></div>
+            <div class="status" id="registerStatus">Digite o ID ou use a leitura NFC.</div>
+            <div class="actions" style="margin-top:13px"><button class="btn" type="submit">Salvar cadastro</button><button class="btn ghost" type="button" id="clearEmployee">Limpar</button></div>
           </form>
         </article>
-
         <article class="card">
           <h2>Funcionários cadastrados</h2>
-          <div class="toolbar">
-            <input id="employeeSearch" placeholder="Pesquisar nome, matrícula ou crachá" />
-            <button class="btn secondary" id="btnExportEmployees">Exportar CSV</button>
-          </div>
+          <div class="toolbar"><input id="employeeSearch" placeholder="Pesquisar nome, matrícula ou crachá"><button class="btn secondary" id="exportEmployees">Exportar CSV</button></div>
           <div id="employeesList"></div>
         </article>
       </div>
@@ -441,549 +68,45 @@
     <section id="view-registros" class="view">
       <article class="card">
         <h2>Registros</h2>
-        <div class="kpi-grid">
-          <div class="kpi"><b id="kpiToday">0</b><span>Hoje</span></div>
-          <div class="kpi"><b id="kpiReleased">0</b><span>Liberados hoje</span></div>
-          <div class="kpi"><b id="kpiEmployees">0</b><span>Funcionários</span></div>
-        </div>
-        <div class="toolbar no-print">
-          <input id="recordSearch" placeholder="Pesquisar registros" />
-          <input id="recordDate" type="date" />
-          <button class="btn secondary" id="btnExportRecords">Exportar CSV</button>
-          <button class="btn ghost" id="btnPrint">Imprimir / PDF</button>
-          <button class="btn ghost" id="btnBackup">Backup JSON</button>
-          <button class="btn ghost" id="btnRestore">Restaurar JSON</button>
-          <input type="file" id="restoreFile" accept=".json,application/json" hidden />
-        </div>
+        <div class="kpis"><div class="kpi"><b id="kpiToday">0</b><span>Hoje</span></div><div class="kpi"><b id="kpiReleased">0</b><span>Liberados</span></div><div class="kpi"><b id="kpiEmployees">0</b><span>Funcionários</span></div></div>
+        <div class="toolbar no-print"><input id="recordSearch" placeholder="Pesquisar registros"><input id="recordDate" type="date"><button class="btn secondary" id="exportRecords">Exportar CSV</button><button class="btn ghost" id="printRecords">Imprimir / PDF</button><button class="btn ghost" id="backup">Backup JSON</button><button class="btn ghost" id="restore">Restaurar JSON</button><input type="file" id="restoreFile" accept=".json,application/json" hidden></div>
         <div id="recordsList"></div>
       </article>
     </section>
   </main>
-
-  <nav>
-    <button class="tab active" data-view="teste">Teste rápido</button>
-    <button class="tab" data-view="funcionarios">Funcionários</button>
-    <button class="tab" data-view="registros">Registros</button>
-  </nav>
+  <nav><button class="tab active" data-view="teste">Teste rápido</button><button class="tab" data-view="funcionarios">Funcionários</button><button class="tab" data-view="registros">Registros</button></nav>
 </div>
-
-<dialog id="confirmDialog">
-  <div class="dialog-body">
-    <h3 id="dialogTitle">Confirmar</h3>
-    <p id="dialogText" class="muted"></p>
-  </div>
-  <div class="dialog-actions">
-    <button class="btn ghost" id="dialogCancel">Cancelar</button>
-    <button class="btn bad" id="dialogConfirm">Excluir</button>
-  </div>
-</dialog>
-
+<dialog id="dialog"><div class="dialog-body"><h3 style="margin-top:0">Confirmar exclusão</h3><p id="dialogText" class="muted"></p></div><div class="dialog-actions"><button class="btn ghost" id="cancelDelete">Cancelar</button><button class="btn secondary" id="confirmDelete">Excluir</button></div></dialog>
 <script>
-(() => {
-  "use strict";
-
-  const KEYS = {
-    employees: "bafometro_employees_v1",
-    records: "bafometro_records_v1",
-    operator: "bafometro_operator_v1"
-  };
-
-  const $ = (id) => document.getElementById(id);
-  const load = (key, fallback) => {
-    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
-    catch { return fallback; }
-  };
-  const save = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-  const uuid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
-  const normalizeCard = (value = "") => value.trim().toUpperCase().replace(/-/g, ":").replace(/\s+/g, "");
-  const normalizeText = (value = "") => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const localDateKey = (dateValue = new Date()) => {
-    const d = new Date(dateValue);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  };
-  const formatDateTime = (iso) => new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short", timeStyle: "medium"
-  }).format(new Date(iso));
-  const esc = (value = "") => String(value).replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
-  }[c]));
-
-  let employees = load(KEYS.employees, []);
-  let records = load(KEYS.records, []);
-  let identifiedEmployee = null;
-  let pendingDelete = null;
-
-  $("operatorName").value = localStorage.getItem(KEYS.operator) || "";
-  $("recordDate").value = localDateKey();
-
-  function showView(name) {
-    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    $(`view-${name}`).classList.add("active");
-    document.querySelector(`.tab[data-view="${name}"]`).classList.add("active");
-    if (name === "funcionarios") renderEmployees();
-    if (name === "registros") renderRecords();
-  }
-
-  document.querySelectorAll(".tab").forEach(tab => {
-    tab.addEventListener("click", () => showView(tab.dataset.view));
-  });
-
-  function setStatus(element, message, type = "") {
-    element.textContent = message;
-    element.className = `status ${type}`.trim();
-  }
-
-  async function startNfcScan(targetInput, statusElement, onRead) {
-    if (!("NDEFReader" in window)) {
-      setStatus(statusElement,
-        "Web NFC não está disponível neste navegador. Abra pelo Chrome no Android, em um endereço HTTPS, ou digite o ID manualmente.",
-        "warn"
-      );
-      return;
-    }
-
-    try {
-      const controller = new AbortController();
-      const reader = new NDEFReader();
-      setStatus(statusElement, "Permita o acesso e aproxime o crachá do celular…", "warn");
-
-      const timeout = setTimeout(() => {
-        controller.abort();
-        setStatus(statusElement, "Tempo esgotado. Tente novamente ou informe o ID manualmente.", "warn");
-      }, 30000);
-
-      reader.addEventListener("readingerror", () => {
-        clearTimeout(timeout);
-        setStatus(statusElement,
-          "O navegador detectou a etiqueta, mas não conseguiu ler uma mensagem NDEF. Este crachá pode exigir leitura nativa pelo APK.",
-          "bad"
-        );
-      }, { once: true });
-
-      reader.addEventListener("reading", (event) => {
-        clearTimeout(timeout);
-        controller.abort();
-
-        const serial = normalizeCard(event.serialNumber || "");
-        if (!serial) {
-          setStatus(statusElement,
-            "A etiqueta foi lida, mas o navegador não disponibilizou o número de série.",
-            "warn"
-          );
-          return;
-        }
-
-        targetInput.value = serial;
-        setStatus(statusElement, `Crachá detectado: ${serial}`, "good");
-        if (typeof onRead === "function") onRead(serial);
-      }, { once: true });
-
-      await reader.scan({ signal: controller.signal });
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-      let message = "Não foi possível iniciar a leitura NFC.";
-      if (error?.name === "NotAllowedError") message = "Permissão NFC negada. Toque novamente e autorize o acesso.";
-      if (error?.name === "NotSupportedError") message = "Este aparelho ou navegador não oferece suporte ao Web NFC.";
-      if (error?.name === "InvalidStateError") message = "Ative o NFC do aparelho e tente novamente.";
-      setStatus(statusElement, `${message} (${error?.name || "erro"})`, "bad");
-    }
-  }
-
-  $("btnScanRegister").addEventListener("click", () => {
-    startNfcScan($("employeeCardId"), $("scanStatusRegister"));
-  });
-
-  $("btnScanTest").addEventListener("click", () => {
-    startNfcScan($("testCardId"), $("scanStatusTest"), findEmployeeByCard);
-  });
-
-  function findEmployeeByCard(rawCard) {
-    const card = normalizeCard(rawCard);
-    $("testCardId").value = card;
-
-    const employee = employees.find(e => normalizeCard(e.cardId) === card && e.active !== false);
-    identifiedEmployee = employee || null;
-
-    if (!employee) {
-      $("identifiedPerson").classList.remove("show");
-      setStatus($("saveStatus"), `Crachá ${card || "(vazio)"} não cadastrado.`, "warn");
-      return;
-    }
-
-    $("identifiedName").textContent = employee.name;
-    $("identifiedInfo").innerHTML = `
-      <span class="pill">Matrícula: ${esc(employee.number)}</span>
-      ${employee.company ? `<span class="pill">${esc(employee.company)}</span>` : ""}
-      ${employee.role ? `<span class="pill">${esc(employee.role)}</span>` : ""}
-      <span class="pill">Crachá: ${esc(employee.cardId)}</span>
-    `;
-    $("identifiedPerson").classList.add("show");
-    setStatus($("saveStatus"), "Funcionário identificado. Informe o resultado e registre.", "good");
-  }
-
-  $("btnFindEmployee").addEventListener("click", () => findEmployeeByCard($("testCardId").value));
-  $("testCardId").addEventListener("keydown", e => {
-    if (e.key === "Enter") findEmployeeByCard(e.currentTarget.value);
-  });
-
-  $("employeeForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const id = $("employeeInternalId").value || uuid();
-    const employee = {
-      id,
-      name: $("employeeName").value.trim(),
-      number: $("employeeNumber").value.trim(),
-      company: $("employeeCompany").value.trim(),
-      role: $("employeeRole").value.trim(),
-      cardId: normalizeCard($("employeeCardId").value),
-      active: true,
-      updatedAt: new Date().toISOString()
-    };
-
-    if (!employee.name || !employee.number || !employee.cardId) {
-      setStatus($("scanStatusRegister"), "Preencha nome, matrícula e ID do crachá.", "bad");
-      return;
-    }
-
-    const duplicatedCard = employees.find(x => normalizeCard(x.cardId) === employee.cardId && x.id !== id);
-    if (duplicatedCard) {
-      setStatus($("scanStatusRegister"),
-        `Este crachá já está vinculado a ${duplicatedCard.name}.`,
-        "bad"
-      );
-      return;
-    }
-
-    const duplicatedNumber = employees.find(x => x.number === employee.number && x.id !== id);
-    if (duplicatedNumber) {
-      setStatus($("scanStatusRegister"),
-        `A matrícula ${employee.number} já pertence a ${duplicatedNumber.name}.`,
-        "bad"
-      );
-      return;
-    }
-
-    const idx = employees.findIndex(x => x.id === id);
-    if (idx >= 0) employees[idx] = employee;
-    else employees.push(employee);
-
-    save(KEYS.employees, employees);
-    clearEmployeeForm();
-    renderEmployees();
-    setStatus($("scanStatusRegister"), "Cadastro salvo com sucesso.", "good");
-  });
-
-  function clearEmployeeForm() {
-    $("employeeForm").reset();
-    $("employeeInternalId").value = "";
-  }
-  $("btnClearEmployee").addEventListener("click", () => {
-    clearEmployeeForm();
-    setStatus($("scanStatusRegister"), "Formulário limpo.", "");
-  });
-
-  function editEmployee(id) {
-    const e = employees.find(x => x.id === id);
-    if (!e) return;
-    $("employeeInternalId").value = e.id;
-    $("employeeName").value = e.name;
-    $("employeeNumber").value = e.number;
-    $("employeeCompany").value = e.company || "";
-    $("employeeRole").value = e.role || "";
-    $("employeeCardId").value = e.cardId;
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    setStatus($("scanStatusRegister"), `Editando ${e.name}.`, "warn");
-  }
-
-  function requestDelete(type, id, label) {
-    pendingDelete = { type, id };
-    $("dialogTitle").textContent = "Confirmar exclusão";
-    $("dialogText").textContent = `Excluir ${label}? Esta ação não poderá ser desfeita neste protótipo.`;
-    $("confirmDialog").showModal();
-  }
-
-  $("dialogCancel").addEventListener("click", () => {
-    pendingDelete = null;
-    $("confirmDialog").close();
-  });
-
-  $("dialogConfirm").addEventListener("click", () => {
-    if (!pendingDelete) return;
-    if (pendingDelete.type === "employee") {
-      employees = employees.filter(x => x.id !== pendingDelete.id);
-      save(KEYS.employees, employees);
-      renderEmployees();
-    } else if (pendingDelete.type === "record") {
-      records = records.filter(x => x.id !== pendingDelete.id);
-      save(KEYS.records, records);
-      renderRecords();
-    }
-    pendingDelete = null;
-    $("confirmDialog").close();
-  });
-
-  function renderEmployees() {
-    const term = normalizeText($("employeeSearch").value);
-    const filtered = employees
-      .filter(e => !term || normalizeText(`${e.name} ${e.number} ${e.company} ${e.role} ${e.cardId}`).includes(term))
-      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-
-    if (!filtered.length) {
-      $("employeesList").innerHTML = `<div class="empty">Nenhum funcionário encontrado.</div>`;
-      return;
-    }
-
-    $("employeesList").innerHTML = `
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>Nome</th><th>Matrícula</th><th>Empresa</th><th>Crachá</th><th>Ações</th>
-          </tr></thead>
-          <tbody>
-            ${filtered.map(e => `
-              <tr>
-                <td><strong>${esc(e.name)}</strong><br><span class="muted small">${esc(e.role || "")}</span></td>
-                <td>${esc(e.number)}</td>
-                <td>${esc(e.company || "—")}</td>
-                <td>${esc(e.cardId)}</td>
-                <td>
-                  <button class="danger-link" data-edit-employee="${e.id}">Editar</button>
-                  <button class="danger-link" data-delete-employee="${e.id}">Excluir</button>
-                </td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>`;
-
-    document.querySelectorAll("[data-edit-employee]").forEach(btn =>
-      btn.addEventListener("click", () => editEmployee(btn.dataset.editEmployee))
-    );
-    document.querySelectorAll("[data-delete-employee]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const e = employees.find(x => x.id === btn.dataset.deleteEmployee);
-        requestDelete("employee", btn.dataset.deleteEmployee, e?.name || "o funcionário");
-      });
-    });
-  }
-
-  $("employeeSearch").addEventListener("input", renderEmployees);
-
-  $("testResult").addEventListener("input", () => {
-    const raw = $("testResult").value.replace(",", ".");
-    const value = Number(raw);
-    if (Number.isFinite(value)) {
-      $("testOutcome").value = value === 0 ? "Liberado" : "Encaminhar";
-    }
-  });
-
-  $("btnSaveTest").addEventListener("click", () => {
-    if (!identifiedEmployee) {
-      setStatus($("saveStatus"), "Identifique um funcionário antes de registrar.", "bad");
-      return;
-    }
-
-    const operator = $("operatorName").value.trim();
-    if (!operator) {
-      setStatus($("saveStatus"), "Informe o responsável pelo teste.", "bad");
-      $("operatorName").focus();
-      return;
-    }
-
-    localStorage.setItem(KEYS.operator, operator);
-
-    const now = new Date();
-    const duplicate = records.find(r =>
-      r.employeeId === identifiedEmployee.id &&
-      localDateKey(r.createdAt) === localDateKey(now)
-    );
-
-    if (duplicate && !confirm(`${identifiedEmployee.name} já possui registro hoje. Deseja registrar novamente?`)) {
-      return;
-    }
-
-    const record = {
-      id: uuid(),
-      createdAt: now.toISOString(),
-      employeeId: identifiedEmployee.id,
-      name: identifiedEmployee.name,
-      number: identifiedEmployee.number,
-      company: identifiedEmployee.company || "",
-      role: identifiedEmployee.role || "",
-      cardId: identifiedEmployee.cardId,
-      result: $("testResult").value.trim(),
-      unit: $("testUnit").value,
-      outcome: $("testOutcome").value,
-      notes: $("testNotes").value.trim(),
-      operator
-    };
-
-    records.unshift(record);
-    save(KEYS.records, records);
-
-    setStatus($("saveStatus"),
-      `Registro salvo para ${identifiedEmployee.name} às ${now.toLocaleTimeString("pt-BR")}.`,
-      "good"
-    );
-
-    identifiedEmployee = null;
-    $("identifiedPerson").classList.remove("show");
-    $("testCardId").value = "";
-    $("testResult").value = "0,00";
-    $("testOutcome").value = "Liberado";
-    $("testNotes").value = "";
-    setTimeout(() => setStatus($("scanStatusTest"), "Pronto para o próximo crachá.", ""), 250);
-  });
-
-  function recordMatches(r, term, date) {
-    const text = normalizeText(`${r.name} ${r.number} ${r.company} ${r.cardId} ${r.outcome} ${r.operator}`);
-    return (!term || text.includes(term)) && (!date || localDateKey(r.createdAt) === date);
-  }
-
-  function renderRecords() {
-    const term = normalizeText($("recordSearch").value);
-    const date = $("recordDate").value;
-    const filtered = records.filter(r => recordMatches(r, term, date));
-
-    const today = localDateKey();
-    const todayRecords = records.filter(r => localDateKey(r.createdAt) === today);
-    $("kpiToday").textContent = todayRecords.length;
-    $("kpiReleased").textContent = todayRecords.filter(r => r.outcome === "Liberado").length;
-    $("kpiEmployees").textContent = employees.length;
-
-    if (!filtered.length) {
-      $("recordsList").innerHTML = `<div class="empty">Nenhum registro encontrado para o filtro atual.</div>`;
-      return;
-    }
-
-    $("recordsList").innerHTML = `
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>Data e hora</th><th>Funcionário</th><th>Matrícula</th><th>Resultado</th>
-            <th>Situação</th><th>Responsável</th><th>Observação</th><th class="no-print">Ação</th>
-          </tr></thead>
-          <tbody>
-            ${filtered.map(r => `
-              <tr>
-                <td>${esc(formatDateTime(r.createdAt))}</td>
-                <td><strong>${esc(r.name)}</strong><br><span class="muted small">${esc(r.company || "")}</span></td>
-                <td>${esc(r.number)}</td>
-                <td>${esc(r.result)} ${esc(r.unit)}</td>
-                <td>${esc(r.outcome)}</td>
-                <td>${esc(r.operator)}</td>
-                <td>${esc(r.notes || "—")}</td>
-                <td class="no-print"><button class="danger-link" data-delete-record="${r.id}">Excluir</button></td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>`;
-
-    document.querySelectorAll("[data-delete-record]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const r = records.find(x => x.id === btn.dataset.deleteRecord);
-        requestDelete("record", btn.dataset.deleteRecord, `o registro de ${r?.name || "teste"}`);
-      });
-    });
-  }
-
-  $("recordSearch").addEventListener("input", renderRecords);
-  $("recordDate").addEventListener("change", renderRecords);
-
-  function csvCell(value) {
-    const text = String(value ?? "").replace(/"/g, '""');
-    return `"${text}"`;
-  }
-
-  function downloadFile(name, content, type) {
-    const blob = new Blob([content], { type });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 500);
-  }
-
-  function exportCsv(name, headers, rows) {
-    const content = "\uFEFF" + [
-      headers.map(csvCell).join(";"),
-      ...rows.map(row => row.map(csvCell).join(";"))
-    ].join("\r\n");
-    downloadFile(name, content, "text/csv;charset=utf-8");
-  }
-
-  $("btnExportEmployees").addEventListener("click", () => {
-    exportCsv(
-      `funcionarios_${localDateKey()}.csv`,
-      ["Nome", "Matrícula", "Empresa", "Função", "ID do crachá"],
-      employees.map(e => [e.name, e.number, e.company, e.role, e.cardId])
-    );
-  });
-
-  $("btnExportRecords").addEventListener("click", () => {
-    const term = normalizeText($("recordSearch").value);
-    const date = $("recordDate").value;
-    const filtered = records.filter(r => recordMatches(r, term, date));
-    exportCsv(
-      `bafometro_${date || localDateKey()}.csv`,
-      ["Data e hora", "Nome", "Matrícula", "Empresa", "Função", "ID do crachá",
-       "Resultado", "Unidade", "Situação", "Responsável", "Observação"],
-      filtered.map(r => [
-        formatDateTime(r.createdAt), r.name, r.number, r.company, r.role, r.cardId,
-        r.result, r.unit, r.outcome, r.operator, r.notes
-      ])
-    );
-  });
-
-  $("btnPrint").addEventListener("click", () => window.print());
-
-  $("btnBackup").addEventListener("click", () => {
-    const backup = {
-      version: 1,
-      generatedAt: new Date().toISOString(),
-      employees,
-      records
-    };
-    downloadFile(
-      `backup_bafometro_${localDateKey()}.json`,
-      JSON.stringify(backup, null, 2),
-      "application/json"
-    );
-  });
-
-  $("btnRestore").addEventListener("click", () => $("restoreFile").click());
-  $("restoreFile").addEventListener("change", async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const data = JSON.parse(await file.text());
-      if (!Array.isArray(data.employees) || !Array.isArray(data.records)) throw new Error("Formato inválido");
-      if (!confirm("Substituir os dados locais pelos dados deste backup?")) return;
-      employees = data.employees;
-      records = data.records;
-      save(KEYS.employees, employees);
-      save(KEYS.records, records);
-      renderEmployees();
-      renderRecords();
-      alert("Backup restaurado.");
-    } catch {
-      alert("Não foi possível restaurar: arquivo inválido.");
-    } finally {
-      event.target.value = "";
-    }
-  });
-
-  renderEmployees();
-  renderRecords();
+(()=>{"use strict";
+const $=id=>document.getElementById(id),KEYS={employees:"bafometro_employees_v1",records:"bafometro_records_v1",operator:"bafometro_operator_v1"};
+const read=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2),card=v=>(v||"").trim().toUpperCase().replace(/-/g,":").replace(/\s+/g,""),norm=v=>(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const day=(v=new Date())=>{const d=new Date(v);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`},dt=v=>new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"medium"}).format(new Date(v)),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+let employees=read(KEYS.employees,[]),records=read(KEYS.records,[]),identified=null,pending=null;$("operator").value=localStorage.getItem(KEYS.operator)||"";$("recordDate").value=day();
+function status(el,msg,type=""){el.textContent=msg;el.className=`status ${type}`.trim()}
+function view(name){document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));$(`view-${name}`).classList.add("active");document.querySelector(`[data-view="${name}"]`).classList.add("active");if(name==="funcionarios")renderEmployees();if(name==="registros")renderRecords()}
+document.querySelectorAll(".tab").forEach(x=>x.onclick=()=>view(x.dataset.view));
+async function scan(input,statusEl,done){if(!("NDEFReader" in window)){status(statusEl,"Web NFC indisponível. Use Chrome Android em HTTPS ou digite o ID.","warn");return}try{const controller=new AbortController(),reader=new NDEFReader();status(statusEl,"Aproxime o crachá do celular…","warn");const timer=setTimeout(()=>{controller.abort();status(statusEl,"Tempo esgotado. Tente novamente.","warn")},30000);reader.addEventListener("readingerror",()=>{clearTimeout(timer);status(statusEl,"O crachá foi detectado, mas não pôde ser lido.","bad")},{once:true});reader.addEventListener("reading",e=>{clearTimeout(timer);controller.abort();const id=card(e.serialNumber);if(!id){status(statusEl,"O navegador não informou o ID do crachá.","warn");return}input.value=id;status(statusEl,`Crachá detectado: ${id}`,"good");if(done)done(id)},{once:true});await reader.scan({signal:controller.signal})}catch(e){if(e.name!=="AbortError")status(statusEl,`Não foi possível iniciar o NFC (${e.name||"erro"}).`,"bad")}}
+$("scanTest").onclick=()=>scan($("cardSearch"),$("scanTestStatus"),findEmployee);$("scanRegister").onclick=()=>scan($("employeeCard"),$("registerStatus"));
+function findEmployee(raw){const id=card(raw);$("cardSearch").value=id;identified=employees.find(e=>card(e.cardId)===id&&e.active!==false)||null;if(!identified){$("person").classList.remove("show");status($("saveStatus"),`Crachá ${id||"(vazio)"} não cadastrado.`,"warn");return}$("personName").textContent=identified.name;$("personInfo").innerHTML=`<span class="pill">Matrícula: ${esc(identified.number)}</span>${identified.company?`<span class="pill">${esc(identified.company)}</span>`:""}${identified.role?`<span class="pill">${esc(identified.role)}</span>`:""}<span class="pill">Crachá: ${esc(identified.cardId)}</span>`;$("person").classList.add("show");status($("saveStatus"),"Funcionário identificado. Registre o resultado.","good")}
+$("findEmployee").onclick=()=>findEmployee($("cardSearch").value);$("cardSearch").onkeydown=e=>{if(e.key==="Enter")findEmployee(e.currentTarget.value)};
+$("employeeForm").onsubmit=e=>{e.preventDefault();const id=$("employeeId").value||uid(),emp={id,name:$("employeeName").value.trim(),number:$("employeeNumber").value.trim(),company:$("employeeCompany").value.trim(),role:$("employeeRole").value.trim(),cardId:card($("employeeCard").value),active:true,updatedAt:new Date().toISOString()};if(!emp.name||!emp.number||!emp.cardId){status($("registerStatus"),"Preencha nome, matrícula e crachá.","bad");return}const dc=employees.find(x=>card(x.cardId)===emp.cardId&&x.id!==id),dn=employees.find(x=>x.number===emp.number&&x.id!==id);if(dc){status($("registerStatus"),`Crachá já vinculado a ${dc.name}.`,"bad");return}if(dn){status($("registerStatus"),`Matrícula já pertence a ${dn.name}.`,"bad");return}const i=employees.findIndex(x=>x.id===id);i>=0?employees[i]=emp:employees.push(emp);write(KEYS.employees,employees);clearEmployee();renderEmployees();status($("registerStatus"),"Cadastro salvo com sucesso.","good")};
+function clearEmployee(){$("employeeForm").reset();$("employeeId").value=""}$("clearEmployee").onclick=()=>{clearEmployee();status($("registerStatus"),"Formulário limpo.")};
+function editEmployee(id){const e=employees.find(x=>x.id===id);if(!e)return;$("employeeId").value=e.id;$("employeeName").value=e.name;$("employeeNumber").value=e.number;$("employeeCompany").value=e.company||"";$("employeeRole").value=e.role||"";$("employeeCard").value=e.cardId;scrollTo({top:0,behavior:"smooth"});status($("registerStatus"),`Editando ${e.name}.`,"warn")}
+function askDelete(type,id,label){pending={type,id};$("dialogText").textContent=`Excluir ${label}?`;$("dialog").showModal()}$("cancelDelete").onclick=()=>{$("dialog").close();pending=null};$("confirmDelete").onclick=()=>{if(!pending)return;if(pending.type==="employee"){employees=employees.filter(x=>x.id!==pending.id);write(KEYS.employees,employees);renderEmployees()}else{records=records.filter(x=>x.id!==pending.id);write(KEYS.records,records);renderRecords()}pending=null;$("dialog").close()};
+function renderEmployees(){const q=norm($("employeeSearch").value),list=employees.filter(e=>!q||norm(`${e.name} ${e.number} ${e.company} ${e.role} ${e.cardId}`).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));if(!list.length){$("employeesList").innerHTML='<div class="empty">Nenhum funcionário encontrado.</div>';return}$("employeesList").innerHTML=`<div class="table-wrap"><table><thead><tr><th>Nome</th><th>Matrícula</th><th>Empresa</th><th>Crachá</th><th>Ações</th></tr></thead><tbody>${list.map(e=>`<tr><td><strong>${esc(e.name)}</strong><br><span class="muted small">${esc(e.role||"")}</span></td><td>${esc(e.number)}</td><td>${esc(e.company||"—")}</td><td>${esc(e.cardId)}</td><td><button class="link-btn" data-edit="${e.id}">Editar</button> <button class="link-btn delete" data-del="${e.id}">Excluir</button></td></tr>`).join("")}</tbody></table></div>`;document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editEmployee(b.dataset.edit));document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const e=employees.find(x=>x.id===b.dataset.del);askDelete("employee",b.dataset.del,e?.name||"o funcionário")})}
+$("employeeSearch").oninput=renderEmployees;
+$("result").oninput=()=>{const n=Number($("result").value.replace(",","."));if(Number.isFinite(n))$("outcome").value=n===0?"Liberado":"Encaminhar"};
+$("saveTest").onclick=()=>{if(!identified){status($("saveStatus"),"Identifique um funcionário antes de registrar.","bad");return}const operator=$("operator").value.trim();if(!operator){status($("saveStatus"),"Informe o responsável pelo teste.","bad");return}localStorage.setItem(KEYS.operator,operator);if(records.some(r=>r.employeeId===identified.id&&day(r.createdAt)===day())&&!confirm(`${identified.name} já possui registro hoje. Registrar novamente?`))return;const now=new Date(),r={id:uid(),createdAt:now.toISOString(),employeeId:identified.id,name:identified.name,number:identified.number,company:identified.company||"",role:identified.role||"",cardId:identified.cardId,result:$("result").value.trim(),unit:$("unit").value,outcome:$("outcome").value,notes:$("notes").value.trim(),operator};records.unshift(r);write(KEYS.records,records);status($("saveStatus"),`Registro salvo para ${identified.name}.`,"good");identified=null;$("person").classList.remove("show");$("cardSearch").value="";$("result").value="0,00";$("outcome").value="Liberado";$("notes").value=""};
+function matches(r,q,d){return(!q||norm(`${r.name} ${r.number} ${r.company} ${r.cardId} ${r.outcome} ${r.operator}`).includes(q))&&(!d||day(r.createdAt)===d)}
+function renderRecords(){const q=norm($("recordSearch").value),d=$("recordDate").value,list=records.filter(r=>matches(r,q,d)),today=records.filter(r=>day(r.createdAt)===day());$("kpiToday").textContent=today.length;$("kpiReleased").textContent=today.filter(r=>r.outcome==="Liberado").length;$("kpiEmployees").textContent=employees.length;if(!list.length){$("recordsList").innerHTML='<div class="empty">Nenhum registro encontrado.</div>';return}$("recordsList").innerHTML=`<div class="table-wrap"><table><thead><tr><th>Data e hora</th><th>Funcionário</th><th>Matrícula</th><th>Resultado</th><th>Situação</th><th>Responsável</th><th>Observação</th><th class="no-print">Ação</th></tr></thead><tbody>${list.map(r=>`<tr><td>${esc(dt(r.createdAt))}</td><td><strong>${esc(r.name)}</strong><br><span class="muted small">${esc(r.company)}</span></td><td>${esc(r.number)}</td><td>${esc(r.result)} ${esc(r.unit)}</td><td>${esc(r.outcome)}</td><td>${esc(r.operator)}</td><td>${esc(r.notes||"—")}</td><td class="no-print"><button class="link-btn delete" data-rdel="${r.id}">Excluir</button></td></tr>`).join("")}</tbody></table></div>`;document.querySelectorAll("[data-rdel]").forEach(b=>b.onclick=()=>{const r=records.find(x=>x.id===b.dataset.rdel);askDelete("record",b.dataset.rdel,`o registro de ${r?.name||"teste"}`)})}
+$("recordSearch").oninput=renderRecords;$("recordDate").onchange=renderRecords;
+const cell=v=>`"${String(v??"").replace(/"/g,'""')}"`;function download(name,data,type){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}function csv(name,head,rows){download(name,"\uFEFF"+[head,...rows].map(r=>r.map(cell).join(";")).join("\r\n"),"text/csv;charset=utf-8")}
+$("exportEmployees").onclick=()=>csv(`funcionarios_${day()}.csv`,["Nome","Matrícula","Empresa","Função","ID do crachá"],employees.map(e=>[e.name,e.number,e.company,e.role,e.cardId]));
+$("exportRecords").onclick=()=>{const q=norm($("recordSearch").value),d=$("recordDate").value,list=records.filter(r=>matches(r,q,d));csv(`bafometro_${d||day()}.csv`,["Data e hora","Nome","Matrícula","Empresa","Função","ID do crachá","Resultado","Unidade","Situação","Responsável","Observação"],list.map(r=>[dt(r.createdAt),r.name,r.number,r.company,r.role,r.cardId,r.result,r.unit,r.outcome,r.operator,r.notes]))};
+$("printRecords").onclick=()=>print();$("backup").onclick=()=>download(`backup_bafometro_${day()}.json`,JSON.stringify({version:1,generatedAt:new Date().toISOString(),employees,records},null,2),"application/json");$("restore").onclick=()=>$("restoreFile").click();$("restoreFile").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.employees)||!Array.isArray(data.records))throw 0;if(!confirm("Substituir os dados locais pelos dados do backup?"))return;employees=data.employees;records=data.records;write(KEYS.employees,employees);write(KEYS.records,records);renderEmployees();renderRecords();alert("Backup restaurado.")}catch{alert("Arquivo de backup inválido.")}finally{e.target.value=""}};
+renderEmployees();renderRecords();if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.error));
 })();
 </script>
 </body>
