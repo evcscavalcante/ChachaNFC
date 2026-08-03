@@ -1,6 +1,7 @@
 name: Configuração final do PWA e mobile
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -63,6 +64,7 @@ jobs:
               #view-funcionarios .card,
               #view-funcionarios form,
               #view-funcionarios .table-wrap {
+                width: 100%;
                 min-width: 0;
                 max-width: 100%;
               }
@@ -81,17 +83,17 @@ jobs:
                 gap: 0;
                 width: 100%;
               }
-              #view-funcionarios .row > * {
-                width: 100%;
-                min-width: 0;
-              }
-              #view-funcionarios .field {
-                min-width: 0;
-              }
+              #view-funcionarios .row > *,
+              #view-funcionarios .field,
               #view-funcionarios input,
               #view-funcionarios select,
               #view-funcionarios .btn {
+                width: 100%;
+                min-width: 0;
                 max-width: 100%;
+              }
+              #view-funcionarios .row[style] {
+                gap: 9px;
               }
               #view-funcionarios .toolbar {
                 display: grid;
