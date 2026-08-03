@@ -1,4 +1,4 @@
-const CACHE_NAME = "bafometro-nfc-v3";
+const CACHE_NAME = "bafometro-nfc-v4";
 const APP_SHELL = [
   "./",
   "./manifest.webmanifest",
