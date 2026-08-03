@@ -1,0 +1,166 @@
+name: Corrigir ícones do PWA
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-pwa-icons.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Preparar gerador de imagens
+        run: python -m pip install --quiet pillow
+
+      - name: Gerar ícones PNG e atualizar PWA
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw
+          import json
+          import re
+
+          def rounded_rectangle(draw, box, radius, fill, outline=None, width=1):
+              draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
+
+          def build_icon(size: int, maskable: bool = False) -> Image.Image:
+              scale = size / 512
+              img = Image.new("RGBA", (size, size), "#F8FAFD")
+              d = ImageDraw.Draw(img)
+
+              outer = 26 if maskable else 42
+              rounded_rectangle(
+                  d,
+                  tuple(int(v * scale) for v in (outer, outer, 512-outer, 512-outer)),
+                  int((108 if maskable else 96) * scale),
+                  "#FFFFFF",
+                  "#DADCE0",
+                  max(1, int(6 * scale)),
+              )
+
+              # Área suave azul, mantendo margem segura para ícone maskable.
+              blue_box = (105, 94, 407, 396) if maskable else (88, 77, 424, 413)
+              rounded_rectangle(
+                  d,
+                  tuple(int(v * scale) for v in blue_box),
+                  int(82 * scale),
+                  "#E8F0FE",
+              )
+
+              # Ondas NFC.
+              stroke = max(2, int(24 * scale))
+              for box in ((139, 128, 330, 319), (178, 167, 292, 281)):
+                  b = tuple(int(v * scale) for v in box)
+                  d.arc(b, start=270, end=90, fill="#0B57D0", width=stroke)
+              d.ellipse(
+                  tuple(int(v * scale) for v in (176, 244, 212, 280)),
+                  fill="#0B57D0",
+              )
+
+              # Confirmação discreta.
+              check = [(260, 326), (305, 371), (386, 278)]
+              d.line(
+                  [(int(x * scale), int(y * scale)) for x, y in check],
+                  fill="#188038",
+                  width=max(3, int(25 * scale)),
+                  joint="curve",
+              )
+              return img
+
+          assets = {
+              "favicon-v1.png": (32, False),
+              "icon-192-v1.png": (192, False),
+              "icon-512-v1.png": (512, False),
+              "icon-maskable-512-v1.png": (512, True),
+              "apple-touch-icon-v1.png": (180, False),
+          }
+          for filename, (size, maskable) in assets.items():
+              build_icon(size, maskable).convert("RGB").save(filename, "PNG", optimize=True)
+
+          index_path = Path("index.html")
+          html = index_path.read_text(encoding="utf-8")
+
+          # Remove links antigos de ícone, preservando o manifest.
+          html = re.sub(r'\s*<link rel="icon"[^>]*>\s*', '\n', html)
+          html = re.sub(r'\s*<link rel="apple-touch-icon"[^>]*>\s*', '\n', html)
+
+          icon_links = '''  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-v1.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192-v1.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v1.png">'''
+
+          if "favicon-v1.png" not in html:
+              html = html.replace(
+                  '<link rel="manifest" href="./manifest.webmanifest">',
+                  '<link rel="manifest" href="./manifest.webmanifest">\n' + icon_links,
+                  1,
+              )
+          index_path.write_text(html, encoding="utf-8")
+
+          manifest_path = Path("manifest.webmanifest")
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest["background_color"] = "#F8FAFD"
+          manifest["theme_color"] = "#F8FAFD"
+          manifest["icons"] = [
+              {
+                  "src": "./icon-192-v1.png",
+                  "sizes": "192x192",
+                  "type": "image/png",
+                  "purpose": "any",
+              },
+              {
+                  "src": "./icon-512-v1.png",
+                  "sizes": "512x512",
+                  "type": "image/png",
+                  "purpose": "any",
+              },
+              {
+                  "src": "./icon-maskable-512-v1.png",
+                  "sizes": "512x512",
+                  "type": "image/png",
+                  "purpose": "maskable",
+              },
+          ]
+          manifest_path.write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+
+          sw_path = Path("sw.js")
+          sw = sw_path.read_text(encoding="utf-8")
+          sw = re.sub(r'const CACHE_NAME = "[^"]+";', 'const CACHE_NAME = "bafometro-nfc-v5";', sw, count=1)
+
+          for asset in [
+              "./favicon-v1.png",
+              "./icon-192-v1.png",
+              "./icon-512-v1.png",
+              "./icon-maskable-512-v1.png",
+              "./apple-touch-icon-v1.png",
+          ]:
+              if asset not in sw:
+                  sw = sw.replace(
+                      '  "./theme-google.css"',
+                      '  "./theme-google.css",\n  "' + asset + '"',
+                      1,
+                  )
+          sw_path.write_text(sw, encoding="utf-8")
+          PY
+
+      - name: Salvar ícones e configurações
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html manifest.webmanifest sw.js \
+            favicon-v1.png icon-192-v1.png icon-512-v1.png \
+            icon-maskable-512-v1.png apple-touch-icon-v1.png
+          git diff --cached --quiet || git commit -m "Adiciona ícones PNG compatíveis com navegador e PWA"
+          git push
