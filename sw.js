@@ -1,12 +1,14 @@
-const CACHE_NAME = "bafometro-nfc-v4";
+const CACHE_NAME = "bafometro-nfc-v6";
 const APP_SHELL = [
   "./",
   "./manifest.webmanifest",
-  "./icon.svg",
-  "./theme-google.css"
+  "./theme-google.css",
+  "./favicon-v1.png",
+  "./icon-192-v1.png",
+  "./icon-512-v1.png"
 ];
 
-async function withGoogleTheme(response) {
+async function prepareHtml(response) {
   if (!response) return response;
 
   const type = response.headers.get("content-type") || "";
@@ -14,11 +16,17 @@ async function withGoogleTheme(response) {
 
   let html = await response.text();
 
+  const additions = [];
   if (!html.includes("theme-google.css")) {
-    html = html.replace(
-      "</head>",
-      '  <link rel="stylesheet" href="./theme-google.css">\n</head>'
-    );
+    additions.push('<link rel="stylesheet" href="./theme-google.css">');
+  }
+  if (!html.includes("favicon-v1.png")) {
+    additions.push('<link rel="icon" type="image/png" sizes="32x32" href="./favicon-v1.png">');
+    additions.push('<link rel="icon" type="image/png" sizes="192x192" href="./icon-192-v1.png">');
+    additions.push('<link rel="apple-touch-icon" sizes="192x192" href="./icon-192-v1.png">');
+  }
+  if (additions.length) {
+    html = html.replace("</head>", `  ${additions.join("\n  ")}\n</head>`);
   }
 
   html = html
@@ -46,9 +54,9 @@ self.addEventListener("install", event => {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(APP_SHELL);
 
-    const response = await fetch("./index.html");
-    const themed = await withGoogleTheme(response);
-    await cache.put("./index.html", themed);
+    const response = await fetch("./index.html", { cache: "no-store" });
+    const prepared = await prepareHtml(response);
+    await cache.put("./index.html", prepared);
 
     await self.skipWaiting();
   })());
@@ -76,11 +84,11 @@ self.addEventListener("fetch", event => {
   if (request.mode === "navigate") {
     event.respondWith((async () => {
       try {
-        const response = await fetch(request);
-        const themed = await withGoogleTheme(response);
+        const response = await fetch(request, { cache: "no-store" });
+        const prepared = await prepareHtml(response);
         const cache = await caches.open(CACHE_NAME);
-        await cache.put("./index.html", themed.clone());
-        return themed;
+        await cache.put("./index.html", prepared.clone());
+        return prepared;
       } catch {
         return caches.match("./index.html");
       }
