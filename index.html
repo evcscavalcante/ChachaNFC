@@ -165,12 +165,34 @@
       </article>
     </section>
 
+    <!-- VIEW: TESTE NDEF -->
+    <section id="view-ndef" class="view">
+      <article class="card">
+        <h2>Teste de compatibilidade NDEF</h2>
+        <div class="nfc">
+          <div class="nfc-icon">NDEF</div>
+          <strong>Verificar o crachá</strong>
+          <p>Este teste é somente leitura. Ele não grava, não apaga e não altera o crachá.</p>
+          <button class="btn block" id="scanNdefCheck">Ler crachá e verificar NDEF</button>
+          <div class="status" id="scanNdefCheckStatus">Aguardando teste.</div>
+        </div>
+
+        <div style="margin-top:14px">
+          <p class="muted" style="margin:0 0 8px">
+            O resultado mostra se o crachá é legível como NDEF, o serial/UID informado pelo navegador e os registros encontrados. Isso não confirma se ele aceita gravação de URL.
+          </p>
+          <pre id="scanNdefCheckDetails" class="status" hidden style="white-space:pre-wrap;text-align:left;overflow:auto"></pre>
+        </div>
+      </article>
+    </section>
+
   </main>
 
   <nav>
     <button class="tab active" data-view="teste">Teste rápido</button>
     <button class="tab" data-view="funcionarios">Funcionários</button>
     <button class="tab" data-view="registros">Registros</button>
+    <button class="tab" data-view="ndef">Teste NDEF</button>
   </nav>
 </div>
 
@@ -187,5 +209,6 @@
 
 <script src="./app.js"></script>
 <script src="./indicadores.js"></script>
+<script src="./nfc-check.js"></script>
 </body>
 </html>
