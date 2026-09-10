@@ -4,7 +4,10 @@
   const view = document.getElementById("view-ndef");
   if (!view) return;
 
-  const TEST_URL = `${location.origin}${location.pathname}?nfc_bridge_test=1`;
+  // Senha geral temporária solicitada para proteger a exclusão.
+  // Como o ChachaNFC é uma aplicação estática, esta senha existe no front-end
+  // e deve ser substituída por autenticação real quando o fluxo for integrado ao EvCS.
+  const DELETE_PASSWORD = "8441";
 
   const toBytes = data => {
     if (!data) return new Uint8Array();
@@ -13,6 +16,12 @@
     } catch {
       return new Uint8Array();
     }
+  };
+
+  const bytesToBase64 = bytes => {
+    let binary = "";
+    bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+    return btoa(binary);
   };
 
   const serializeRecord = record => ({
@@ -25,10 +34,8 @@
   });
 
   const recordInit = record => {
-    const init = {
-      recordType: record.recordType || "unknown",
-      data: record.data,
-    };
+    const init = { recordType: record.recordType || "unknown" };
+    if (record.recordType !== "empty") init.data = record.data;
     if (record.mediaType) init.mediaType = record.mediaType;
     if (record.id) init.id = record.id;
     if (record.encoding) init.encoding = record.encoding;
@@ -37,6 +44,7 @@
   };
 
   const decode = record => {
+    if (!record?.data?.byteLength) return "";
     try {
       return new TextDecoder(record.encoding || "utf-8").decode(record.data);
     } catch {
@@ -44,21 +52,48 @@
     }
   };
 
-  const isExactTestUrlRecord = record => {
-    if (record.recordType !== "url" && record.recordType !== "absolute-url") {
-      return false;
+  const signature = record => [
+    record.recordType || "unknown",
+    record.mediaType || "",
+    record.id || "",
+    record.encoding || "",
+    record.lang || "",
+    bytesToBase64(record.data || new Uint8Array()),
+  ].join("|");
+
+  const signatureCounts = records => {
+    const counts = new Map();
+    records.forEach(record => {
+      const key = signature(record);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return counts;
+  };
+
+  const sameRecordMultiset = (actual, expected) => {
+    if (actual.length !== expected.length) return false;
+    const a = signatureCounts(actual);
+    const e = signatureCounts(expected);
+    if (a.size !== e.size) return false;
+    for (const [key, count] of e.entries()) {
+      if (a.get(key) !== count) return false;
     }
-    try {
-      const current = new URL(decode(record));
-      const expected = new URL(TEST_URL);
-      return (
-        current.origin === expected.origin &&
-        current.pathname === expected.pathname &&
-        current.searchParams.get("nfc_bridge_test") === "1"
-      );
-    } catch {
-      return false;
-    }
+    return true;
+  };
+
+  const describeRecord = (record, index) => {
+    const text = decode(record).replace(/\s+/g, " ").trim();
+    const type = record.recordType || "unknown";
+    let title = `Registro ${index + 1} · ${type}`;
+    if (record.mediaType) title += ` · ${record.mediaType}`;
+    if (record.id) title += ` · id=${record.id}`;
+
+    let detail = text;
+    if (!detail && type === "empty") detail = "Registro vazio NDEF";
+    if (!detail) detail = `${record.data?.byteLength || 0} byte(s) de dados`;
+    if (detail.length > 220) detail = `${detail.slice(0, 217)}…`;
+
+    return { title, detail };
   };
 
   async function readOnce(timeoutMs = 30000) {
@@ -122,100 +157,222 @@
   card.className = "card";
   card.style.marginTop = "15px";
   card.innerHTML = `
-    <h2>Remover URL de teste do ChachaNFC</h2>
+    <h2>Excluir registros gravados no NFC</h2>
     <p class="muted" style="margin-top:0">
-      Remove somente o registro URL com <code>nfc_bridge_test=1</code> deste Pages e preserva os demais registros NDEF, incluindo o EVCS1.
+      Leia o crachá para ver exatamente o que está gravado. Selecione somente os registros que deseja apagar; os demais serão preservados.
     </p>
-    <button class="btn secondary block" type="button" id="removeChachaTestUrl">
-      Remover URL de teste e preservar EVCS1
+
+    <button class="btn secondary block" type="button" id="loadNdefForDelete">
+      1. Ler registros gravados
     </button>
-    <div class="status" id="removeChachaTestUrlStatus">
-      Nenhuma alteração foi feita.
+
+    <div id="ndefDeleteRecords" style="display:grid;gap:9px;margin-top:13px"></div>
+
+    <div class="field" id="ndefDeletePasswordField" style="margin-top:13px" hidden>
+      <label for="ndefDeletePassword">Senha para excluir</label>
+      <input id="ndefDeletePassword" type="password" inputmode="numeric" autocomplete="off" placeholder="Digite a senha">
+    </div>
+
+    <button class="btn secondary block" type="button" id="deleteSelectedNdef" disabled style="margin-top:9px">
+      2. Excluir selecionados
+    </button>
+
+    <div class="status" id="deleteSelectedNdefStatus">
+      Primeiro leia o crachá para carregar os registros.
     </div>
   `;
   view.appendChild(card);
 
-  const removeButton = document.getElementById("removeChachaTestUrl");
-  const removeStatus = document.getElementById("removeChachaTestUrlStatus");
+  const loadButton = document.getElementById("loadNdefForDelete");
+  const deleteButton = document.getElementById("deleteSelectedNdef");
+  const passwordField = document.getElementById("ndefDeletePasswordField");
+  const passwordInput = document.getElementById("ndefDeletePassword");
+  const recordsContainer = document.getElementById("ndefDeleteRecords");
+  const deleteStatus = document.getElementById("deleteSelectedNdefStatus");
+
+  let prepared = null;
 
   const setStatus = (message, type = "") => {
-    removeStatus.textContent = message;
-    removeStatus.className = `status ${type}`.trim();
+    deleteStatus.textContent = message;
+    deleteStatus.className = `status ${type}`.trim();
   };
 
-  removeButton.addEventListener("click", async () => {
-    if (
-      !confirm(
-        "Remover somente a URL temporária do ChachaNFC e manter os demais registros NDEF?",
-      )
-    ) {
+  const getSelectedIndexes = () => Array.from(
+    recordsContainer.querySelectorAll('input[type="checkbox"][data-record-index]:checked'),
+    checkbox => Number(checkbox.dataset.recordIndex),
+  ).filter(Number.isInteger);
+
+  const updateDeleteEnabled = () => {
+    deleteButton.disabled = !(prepared?.records?.length && getSelectedIndexes().length);
+  };
+
+  const renderRecords = records => {
+    recordsContainer.replaceChildren();
+
+    if (!records.length) {
+      const empty = document.createElement("div");
+      empty.className = "status warn";
+      empty.textContent = "Nenhum registro NDEF foi encontrado neste crachá.";
+      recordsContainer.appendChild(empty);
+      passwordField.hidden = true;
+      updateDeleteEnabled();
       return;
     }
 
-    removeButton.disabled = true;
-    setStatus("Aproxime o crachá. Primeiro vou ler e conferir o conteúdo…", "info");
+    records.forEach((record, index) => {
+      const label = document.createElement("label");
+      label.style.cssText = "display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid var(--border,#dfe3eb);border-radius:12px;cursor:pointer";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.dataset.recordIndex = String(index);
+      checkbox.style.cssText = "width:auto;margin-top:4px;flex:0 0 auto";
+      checkbox.addEventListener("change", updateDeleteEnabled);
+
+      const text = document.createElement("span");
+      text.style.cssText = "min-width:0;display:grid;gap:3px";
+
+      const { title, detail } = describeRecord(record, index);
+      const strong = document.createElement("strong");
+      strong.textContent = title;
+      const small = document.createElement("span");
+      small.className = "muted";
+      small.style.cssText = "overflow-wrap:anywhere;font-weight:400";
+      small.textContent = detail;
+
+      text.append(strong, small);
+      label.append(checkbox, text);
+      recordsContainer.appendChild(label);
+    });
+
+    passwordField.hidden = false;
+    passwordInput.value = "";
+    updateDeleteEnabled();
+  };
+
+  const loadRecords = async (statusMessage = "Aproxime o crachá para ler os registros gravados…") => {
+    loadButton.disabled = true;
+    deleteButton.disabled = true;
+    prepared = null;
+    recordsContainer.replaceChildren();
+    passwordField.hidden = true;
+    setStatus(statusMessage, "info");
 
     try {
       const event = await readOnce();
-      const serialBefore = event.serialNumber || "";
       const records = Array.from(event.message.records || []).map(serializeRecord);
-      const removable = records.filter(isExactTestUrlRecord);
-      const preserved = records.filter(record => !isExactTestUrlRecord(record));
+      prepared = {
+        serialNumber: event.serialNumber || "",
+        records,
+      };
+      renderRecords(records);
 
-      if (!removable.length) {
-        setStatus("ℹ️ A URL temporária do ChachaNFC não foi encontrada. Nada foi alterado.", "warn");
-        return;
-      }
-      if (!preserved.length) {
-        throw new Error(
-          "A remoção deixaria a mensagem NDEF sem registros. Operação interrompida por segurança.",
+      if (records.length) {
+        setStatus(
+          `✅ ${records.length} registro(s) encontrado(s). Marque o que deseja excluir.`,
+          "good",
         );
+      } else {
+        setStatus("ℹ️ O crachá não possui registros NDEF para excluir.", "warn");
       }
+      return prepared;
+    } catch (error) {
+      setStatus(friendlyError(error), "bad");
+      return null;
+    } finally {
+      loadButton.disabled = false;
+      updateDeleteEnabled();
+    }
+  };
 
-      const evcs1Present = preserved.some(record =>
-        record.recordType === "text" && decode(record).startsWith("EVCS1|"),
-      );
-      if (!evcs1Present) {
-        throw new Error(
-          "O registro EVCS1 não foi localizado entre os registros preservados. Operação interrompida por segurança.",
-        );
-      }
+  loadButton.addEventListener("click", () => loadRecords());
 
-      setStatus(
-        `URL de teste localizada. Mantenha o MESMO crachá encostado para preservar ${preserved.length} registro(s) e remover ${removable.length}.`,
-        "info",
-      );
+  deleteButton.addEventListener("click", async () => {
+    if (!prepared?.records?.length) return;
 
+    const selectedIndexes = getSelectedIndexes();
+    if (!selectedIndexes.length) {
+      setStatus("Selecione pelo menos um registro para excluir.", "warn");
+      return;
+    }
+
+    if (passwordInput.value !== DELETE_PASSWORD) {
+      setStatus("Senha incorreta. A exclusão não foi liberada.", "bad");
+      passwordInput.focus();
+      passwordInput.select();
+      return;
+    }
+
+    const selected = new Set(selectedIndexes);
+    const preserved = prepared.records.filter((_, index) => !selected.has(index));
+    const deletingAll = preserved.length === 0;
+
+    const confirmation = deletingAll
+      ? `Excluir os ${selectedIndexes.length} registro(s) selecionado(s)? O crachá ficará com um registro NDEF vazio.`
+      : `Excluir ${selectedIndexes.length} registro(s) e preservar ${preserved.length}?`;
+
+    if (!confirm(confirmation)) return;
+
+    deleteButton.disabled = true;
+    loadButton.disabled = true;
+    passwordInput.disabled = true;
+    setStatus(
+      deletingAll
+        ? "Mantenha o MESMO crachá encostado. Limpando o conteúdo NDEF…"
+        : `Mantenha o MESMO crachá encostado. Preservando ${preserved.length} registro(s) e removendo ${selectedIndexes.length}…`,
+      "info",
+    );
+
+    try {
       const writer = new NDEFReader();
-      await writer.write(
-        { records: preserved.map(recordInit) },
-        { overwrite: true },
-      );
+      const recordsToWrite = deletingAll
+        ? [{ recordType: "empty" }]
+        : preserved.map(recordInit);
+
+      await writer.write({ records: recordsToWrite }, { overwrite: true });
 
       setStatus("Gravação concluída. Aproxime novamente o mesmo crachá para verificar…", "info");
       const verification = await readOnce();
       const verifiedRecords = Array.from(verification.message.records || []).map(serializeRecord);
-      const testUrlStillPresent = verifiedRecords.some(isExactTestUrlRecord);
-      const evcs1StillPresent = verifiedRecords.some(record =>
-        record.recordType === "text" && decode(record).startsWith("EVCS1|"),
-      );
       const serialAfter = verification.serialNumber || "";
-      const sameSerial = !serialBefore || !serialAfter || serialBefore.toLowerCase() === serialAfter.toLowerCase();
+      const sameSerial = !prepared.serialNumber || !serialAfter || prepared.serialNumber.toLowerCase() === serialAfter.toLowerCase();
 
-      if (testUrlStillPresent || !evcs1StillPresent || !sameSerial) {
-        throw new Error(
-          "A verificação final não confirmou a remoção segura. Confira o conteúdo pelo teste NDEF antes de usar o crachá.",
-        );
+      if (!sameSerial) {
+        throw new Error("O crachá apresentado na verificação não tem o mesmo serial/UID do crachá lido antes da exclusão.");
       }
 
-      setStatus(
-        `✅ URL de teste removida. EVCS1 preservado. Registros atuais: ${verifiedRecords.length}.`,
-        "good",
-      );
+      if (deletingAll) {
+        const clean = verifiedRecords.length === 0 || (
+          verifiedRecords.length === 1 && verifiedRecords[0].recordType === "empty"
+        );
+        if (!clean) {
+          throw new Error("A verificação final encontrou conteúdo além do registro vazio esperado.");
+        }
+      } else if (!sameRecordMultiset(verifiedRecords, preserved)) {
+        throw new Error("A verificação final não confirmou exatamente os registros que deveriam permanecer.");
+      }
+
+      prepared = {
+        serialNumber: serialAfter || prepared.serialNumber,
+        records: verifiedRecords,
+      };
+      renderRecords(verifiedRecords);
+      passwordInput.value = "";
+
+      if (deletingAll) {
+        setStatus("✅ Conteúdo removido. O crachá ficou com um registro NDEF vazio.", "good");
+      } else {
+        setStatus(
+          `✅ Exclusão confirmada. Permanecem ${verifiedRecords.length} registro(s) no crachá.`,
+          "good",
+        );
+      }
     } catch (error) {
       setStatus(friendlyError(error), "bad");
     } finally {
-      removeButton.disabled = false;
+      loadButton.disabled = false;
+      passwordInput.disabled = false;
+      updateDeleteEnabled();
     }
   });
 })();

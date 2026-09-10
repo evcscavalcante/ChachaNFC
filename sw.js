@@ -1,4 +1,4 @@
-const CACHE_NAME = "bafometro-nfc-v11";
+const CACHE_NAME = "bafometro-nfc-v12";
 const APP_SHELL = [
   "./",
   "./index.html",
