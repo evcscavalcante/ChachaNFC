@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./theme-google.css">
   <link rel="stylesheet" href="./indicadores.css">
+  <link rel="stylesheet" href="./nfc-lab.css">
 </head>
 <body>
 <div class="app">
@@ -165,10 +166,10 @@
       </article>
     </section>
 
-    <!-- VIEW: TESTE NDEF -->
+    <!-- VIEW: NFC LAB -->
     <section id="view-ndef" class="view">
       <article class="card">
-        <h2>Teste de compatibilidade NDEF</h2>
+        <h2>Compatibilidade Web NFC / NDEF</h2>
         <div class="nfc">
           <div class="nfc-icon">NDEF</div>
           <strong>Verificar o crachá</strong>
@@ -179,7 +180,7 @@
 
         <div style="margin-top:14px">
           <p class="muted" style="margin:0 0 8px">
-            O resultado mostra se o crachá é legível como NDEF, o serial/UID informado pelo navegador e os registros encontrados. Isso não confirma se ele aceita gravação de URL.
+            O resultado mostra se o crachá é legível como NDEF, o serial/UID informado pelo navegador e os registros encontrados. Isso não confirma recursos de baixo nível do chip.
           </p>
           <pre id="scanNdefCheckDetails" class="status" hidden style="white-space:pre-wrap;text-align:left;overflow:auto"></pre>
         </div>
@@ -192,7 +193,7 @@
     <button class="tab active" data-view="teste">Teste rápido</button>
     <button class="tab" data-view="funcionarios">Funcionários</button>
     <button class="tab" data-view="registros">Registros</button>
-    <button class="tab" data-view="ndef">Teste NDEF</button>
+    <button class="tab" data-view="ndef">NFC Lab</button>
   </nav>
 </div>
 
@@ -211,5 +212,8 @@
 <script src="./indicadores.js"></script>
 <script src="./nfc-check.js"></script>
 <script src="./nfc-remove-test-url.js"></script>
+<script src="./nfc-core.js"></script>
+<script src="./nfc-studio.js"></script>
+<script src="./nfc-security.js"></script>
 </body>
 </html>
